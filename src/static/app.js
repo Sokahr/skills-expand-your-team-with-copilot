@@ -569,6 +569,12 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-buttons">
+        <span class="share-label">Share:</span>
+        <a class="share-btn share-twitter" href="${getTwitterShareUrl(name, details)}" target="_blank" rel="noopener noreferrer" title="Share on X (Twitter)" aria-label="Share on X (Twitter)">𝕏</a>
+        <a class="share-btn share-facebook" href="${getFacebookShareUrl(name)}" target="_blank" rel="noopener noreferrer" title="Share on Facebook" aria-label="Share on Facebook">f</a>
+        <button class="share-btn share-copy" data-activity="${name}" title="Copy link" aria-label="Copy link to this activity">🔗</button>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -587,7 +593,61 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // Add click handler for the copy link share button
+    const copyButton = activityCard.querySelector(".share-copy");
+    copyButton.addEventListener("click", () => {
+      handleCopyLink(name, copyButton);
+    });
+
     activitiesList.appendChild(activityCard);
+  }
+
+  // Returns a shareable URL for the given activity using a hash fragment so
+  // the link points directly to the named activity on the page.
+  function getActivityUrl(activityName) {
+    const url = new URL(window.location.href);
+    url.hash = encodeURIComponent(activityName);
+    return url.toString();
+  }
+
+  // Returns a Twitter/X share URL for the given activity.
+  // URLSearchParams handles encoding of the text and URL values.
+  function getTwitterShareUrl(activityName, details) {
+    const text = `Check out ${activityName} at Mergington High School! ${details.description}`;
+    const params = new URLSearchParams({ text, url: getActivityUrl(activityName) });
+    return `https://twitter.com/intent/tweet?${params.toString()}`;
+  }
+
+  // Returns a Facebook share URL for the given activity
+  function getFacebookShareUrl(activityName) {
+    const params = new URLSearchParams({ u: getActivityUrl(activityName) });
+    return `https://www.facebook.com/sharer/sharer.php?${params.toString()}`;
+  }
+
+  // Copies the activity link to the clipboard and shows feedback on the button.
+  // Falls back to a prompt dialog when the Clipboard API is unavailable.
+  function handleCopyLink(activityName, button) {
+    const url = getActivityUrl(activityName);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        showCopySuccess(button);
+      }).catch(() => {
+        window.prompt("Copy this link to share the activity:", url);
+      });
+    } else {
+      window.prompt("Copy this link to share the activity:", url);
+    }
+  }
+
+  // Briefly marks the copy button as successful, then restores its original state
+  function showCopySuccess(button) {
+    const original = button.textContent;
+    button.textContent = "✓";
+    button.classList.add("share-copy-success");
+    setTimeout(() => {
+      button.textContent = original;
+      button.classList.remove("share-copy-success");
+    }, 2000);
   }
 
   // Event listeners for search and filter
